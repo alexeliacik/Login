@@ -89,28 +89,27 @@ const App = () => {
   };
 
   const loginHandler = () => {
-    const userLogin = {
+    const user = {
       username: username,
       password: password,
     };
+
     axios
-      .post(
-        "https://dancebug.com/rest/test/login.php",
-        JSON.stringify(userLogin)
-      )
+      .post("https://dancebug.com/rest/test/login.php", user)
       .then((response) => console.log(response));
   };
 
   const registerHandler = () => {
-    // const user = {
-    //   name: name,
-    //   username: username,
-    //   password: password,
-    //   dob: selectedDate,
-    // };
-    // axios
-    //   .post("https://dancebug.com/rest/test/update.php", JSON.stringify(user))
-    //   .then((response) => console.log(response));
+    const user = {
+      name: name,
+      username: username,
+      password: password,
+      dob: selectedDate,
+    };
+
+    axios
+      .post("https://dancebug.com/rest/test/update.php", JSON.stringify(user))
+      .then((response) => console.log(response));
   };
 
   return (
