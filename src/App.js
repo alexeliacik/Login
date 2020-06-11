@@ -1,76 +1,24 @@
-import React, { useEffect, useState } from "react";
-// import Login from "./components/Login";
-import styled, { createGlobalStyle } from "styled-components";
+import React, { useState } from "react";
+
+import Login from "./components/Login/Login";
+import Register from "./components/Register/Register";
+import Update from "./components/Update/Update";
+import User from "./components/User/User";
+
+import StyledApp, { GlobalStyle } from "./StyledApp";
+import { Route, Switch, useHistory } from "react-router-dom";
 import axios from "axios";
-import TextField from "@material-ui/core/TextField";
-import DateFnsUtils from "@date-io/date-fns"; // import
-import { DatePicker, MuiPickersUtilsProvider } from "@material-ui/pickers";
-import Button from "@material-ui/core/Button";
-
-const GlobalStyle = createGlobalStyle`
-  *,*::after, *::before {
-    padding: 0;
-    margin: 0;
-    box-sizing: inherit;
-  }
-
-  html {
-    font-size: 100%;  /* 1rem = 10px */
-    box-sizing: border-box;
-  }
-
-  body {
-    font-family: 'Roboto', sans-serif;
-  }
-`;
-
-const StyledApp = styled.div`
-  width: 50%;
-  margin: 0 auto;
-  padding: 20px;
-  box-shadow: 0 4px 8px rgba(40, 53, 147, 0.6);
-  margin-top: 30px;
-  padding-bottom: 40px;
-
-  form {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    .input {
-      width: 100%;
-      p {
-        font-size: 10px;
-        transition: all 0.2s;
-      }
-      margin-bottom: 1rem;
-    }
-
-    .name {
-      color: ${({ name }) => (name.length > 0 ? "red" : "yellow")};
-    }
-
-    .username {
-      color: ${({ username }) => (username.length > 0 ? "red" : "yellow")};
-    }
-
-    .password {
-      color: ${({ password }) => (password.length > 0 ? "red" : "yellow")};
-    }
-
-    .btn {
-      margin-top: 10px;
-      width: 100%;
-    }
-  }
-`;
+import qs from "qs";
 
 const App = () => {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  useEffect(() => {}, []);
+  const [message, setMessage] = useState(null);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+  const history = useHistory();
 
   const nameChangeHandler = (e) => {
     setName(e.target.value.trim());
@@ -95,8 +43,16 @@ const App = () => {
     };
 
     axios
-      .post("https://dancebug.com/rest/test/login.php", user)
-      .then((response) => console.log(response));
+      .post("https://dancebug.com/rest/test/login.php", qs.stringify(user))
+      .then((response) => {
+        setMessage(response.data.message.slice(0, -1).toUpperCase());
+        if (response.data.status === 1) {
+          window.localStorage.setItem(username, response.data.token);
+          setUser(response.data.user);
+          history.push("/user");
+        }
+      })
+      .catch((err) => setError("Opps!! Something went wrong!"));
   };
 
   const registerHandler = () => {
@@ -104,84 +60,151 @@ const App = () => {
       name: name,
       username: username,
       password: password,
-      dob: selectedDate,
+      dob: selectedDate.toString().split(" ").slice(1, 4).join("-"),
+    };
+    // This condition overrides server's response message!!
+    // if (password.length > 3 && username.length > 3 && name.length > 3) {
+    axios
+      .post("https://dancebug.com/rest/test/register.php", qs.stringify(user))
+      .then((response) => {
+        setMessage(response.data.message.slice(0, -21).toUpperCase());
+        if (response.data.status === 1) {
+          setUser(user);
+          history.push("/user");
+        }
+      })
+      .catch((err) => setError("Opps!! Something went wrong!"));
+    // } else {
+    //   setMessage("FORM INVALID!");
+    // }
+  };
+
+  const updateHandler = () => {
+    const user = {
+      name: name,
+      username: username,
+      password: password,
+      dob: selectedDate.toString().split(" ").slice(1, 4).join("-"),
+      token: window.localStorage.getItem(username),
     };
 
     axios
-      .post("https://dancebug.com/rest/test/update.php", JSON.stringify(user))
-      .then((response) => console.log(response));
+      .post("https://dancebug.com/rest/test/update.php", qs.stringify(user))
+      .then((response) => {
+        setMessage(
+          // Misspelled word corrected succesfully :)
+          response.data.message
+            .slice(0, -1)
+            .toUpperCase()
+            .split(" ")
+            .map((m) => (m === "WORNG" ? (m = "WRONG") : m))
+            .join(" ")
+        );
+        if (response.data.status === 1) {
+          setUser(user);
+        }
+      })
+      .catch((err) => setError("Opps!! Something went wrong!"));
+  };
+
+  const logOutHandler = () => {
+    setName("");
+    setUsername("");
+    setPassword("");
+    setMessage("");
+    history.push("/");
+  };
+
+  const registerRedirectHandler = () => {
+    setName("");
+    setUsername("");
+    setMessage("");
+    setPassword("");
+    history.push("/register");
+  };
+
+  const homepageRedirectHandler = () => {
+    setName("");
+    setUsername("");
+    setMessage("");
+    setPassword("");
+    history.push("/");
+  };
+
+  const updateRedirectHandler = () => {
+    history.push("/update");
   };
 
   return (
     <StyledApp name={name} password={password} username={username}>
       <GlobalStyle />
-      {/* <Login
-        username={username}
-        password={password}
-        loginHandler={loginHandler}
-        passwordChangeHandler={passwordChangeHandler}
-        usernameChangeHandler={usernameChangeHandler}
-      /> */}
-      <form>
-        <TextField
-          className="name input"
-          onChange={nameChangeHandler}
-          value={name}
-          required
-          id="standard-error-helper-text"
-          label="Name"
-          helperText={name.length > 2 ? "Valid!" : "Please type your name"}
-        />
 
-        <TextField
-          className="username input"
-          value={username}
-          onChange={usernameChangeHandler}
-          id="standard-error-helper-text"
-          label="Username"
-          required
-          helperText={
-            username.length > 2 ? "Valid!" : "Please type your username"
-          }
+      <Switch>
+        <Route
+          exact
+          path="/"
+          render={() => (
+            <Login
+              error={error}
+              username={username}
+              password={password}
+              loginHandler={loginHandler}
+              passwordChangeHandler={passwordChangeHandler}
+              registerRedirectHandler={registerRedirectHandler}
+              usernameChangeHandler={usernameChangeHandler}
+            />
+          )}
         />
-        <TextField
-          className="password input"
-          onChange={passwordChangeHandler}
-          id="standard-error-helper-text"
-          value={password}
-          type="password"
-          label="Password"
-          required
-          helperText={
-            password.length > 7 ? "Valid!" : "*At least 8 character..."
-          }
+        <Route
+          path="/register"
+          render={() => (
+            <Register
+              error={error}
+              username={username}
+              password={password}
+              loginHandler={loginHandler}
+              passwordChangeHandler={passwordChangeHandler}
+              usernameChangeHandler={usernameChangeHandler}
+              name={name}
+              selectedDate={selectedDate}
+              nameChangeHandler={nameChangeHandler}
+              registerHandler={registerHandler}
+              dateChangeHandler={dateChangeHandler}
+              homepageRedirectHandler={homepageRedirectHandler}
+            />
+          )}
         />
-        <MuiPickersUtilsProvider utils={DateFnsUtils}>
-          <DatePicker
-            className="input"
-            value={selectedDate}
-            onChange={dateChangeHandler}
-          />
-        </MuiPickersUtilsProvider>
-
-        <Button
-          className="btn"
-          variant="contained"
-          color="primary"
-          onClick={loginHandler}
-        >
-          Login
-        </Button>
-
-        <Button
-          className="btn"
-          variant="contained"
-          color="primary"
-          onClick={registerHandler}
-        >
-          Register
-        </Button>
-      </form>
+        <Route
+          path="/update"
+          render={() => (
+            <Update
+              error={error}
+              username={username}
+              password={password}
+              loginHandler={loginHandler}
+              passwordChangeHandler={passwordChangeHandler}
+              usernameChangeHandler={usernameChangeHandler}
+              name={name}
+              selectedDate={selectedDate}
+              nameChangeHandler={nameChangeHandler}
+              updateHandler={updateHandler}
+              homepageRedirectHandler={homepageRedirectHandler}
+              dateChangeHandler={dateChangeHandler}
+            />
+          )}
+        />
+        <Route
+          path="/user"
+          render={() => (
+            <User
+              user={user}
+              updateRedirectHandler={updateRedirectHandler}
+              logOutHandler={logOutHandler}
+            />
+          )}
+        />
+      </Switch>
+      <p className="message">{message}</p>
     </StyledApp>
   );
 };
