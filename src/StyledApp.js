@@ -20,12 +20,18 @@ export const GlobalStyle = createGlobalStyle`
 const StyledApp = styled.div`
   position: relative;
   width: 50%;
+
   margin: 0 auto;
   padding: 20px;
   box-shadow: 0 4px 8px rgba(40, 53, 147, 0.6);
   margin-top: 30px;
   padding-bottom: 40px;
   min-height: 35vh;
+
+  @media (max-width: 1020px) {
+    width: 70%;
+    padding: 20px 10px;
+  }
 
   .message {
     position: absolute;
